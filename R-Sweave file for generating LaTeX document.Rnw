@@ -1,0 +1,296 @@
+\documentclass{report}
+\UseRawInputEncoding
+\begin{document}
+
+{\sc \large Institut fur Statistik und Operations Research}\\
+{\sc \large Universitaet Wien}\\
+Fuat Sarp Olcay\\\ 
+\rule[4mm]{\textwidth}{0.3mm}
+\vspace{-8mm}\quad\\
+\begin{center}
+\mbox{{\Huge\bf Biostatistics}}\\
+\quad\\
+\end{center}
+\begin{center}
+\textbf{\Huge\bf Report about the Scientific Study:\\ "dogs recognize dog and human emotions" \\ From Natalia Albuquerque et. al (2015)}
+\end{center}
+\tableofcontents
+
+\chapter{Introduction}
+In this report, we will discuss the scientific study "Dogs recognize dog and human emotions" from Albuquerque et al. The study was published on rsbl.royalsocietypublishing.org in December 2015. 
+We will be going through the experiment design, statistical methods and results of the study.
+\chapter{Experiment Design}
+\section{Subjects}
+In this experiment the scientists tested twenty-three adult domestic pet dogs without auditory, visual or chronic health problems in this cross-modal preferential looking paradigm; however, five subjects had to be excluded due to lack of attention and restlessness during testing. Thus, the scientists analysed the responses of seventeen dogs (9 males and 8 females, 2 – 7.5 years old of various breeds). 
+\section{Stimuli}
+As there was a need for congruent visual and acoustic cues of specific emotional valence from the same
+individuals the scientists generated their own stimuli. Stimuli were sampled from two (one male and one
+female) adult drama students and adult police dogs. For each emotional valence (positive and negative), the
+corresponding facial expression and vocalization was recorded from each individual - faces and vocalizations
+were taken and recorded in one single session per model, in naturalistic situations. For the humans, the
+scientists generated the stimuli in a sound proof room with controlled lightning, asking the models to evoke
+the emotions (happiness and anger) and express them through their faces and voices. For the dogs, the
+scientists photographed and recorded the models in naturalistic situations, during play and agonistic
+encounters with another dog.   
+\section{Experimental Procedure}
+During testing dogs stood in a quiet, dimly-lit test room and viewed the display. One researcher (R1) controlled stimulus presentation, while another (R2) stood behind the dog, with her hands on the subject’s shoulders. R2 wore headphones (always listening to the same music) and could not see the screens (looked down) and so was unaware of the location of the visual stimuli for any specific trial and could not interfere with the subjects’ response. As vocalisations could only be classed as congruent or incongruent depending on the position of the images, the experimenter could not, even unconsciously, cue the animals. 
+
+The trial started by flashing a LED panel placed between the two projection screens to attract the dog’s attention. Once the dog’s gaze was oriented towards the middle, stimuli was presented. Subjects spontaneously and passively viewed the face-pair for as long as they wanted; their head and eye movements were monitored and recorded by a video camera (Sanyo CCD camera VVC-3312P) placed at the bottom of the LED panel. This camera was connected to a monitor that allowed R1 to monitor stimulus presentation as well as the subjects’ attention in real time.
+
+\chapter{Statistical Methods}
+\section{Data Set}
+\subsection{Congruence Index}
+The researchers calculated a congruence index = (C - I)/T, where C and I represent the amount of time the dog looked at the congruent (facial expression matching emotional vocalization, C) and incongruent faces (I), and T represents total looking time (looking left / looking right / looking at the centre) for the given trial, to measure the dog’s sensitivity to audio-visual emotional cues delivered simultaneously.
+\subsection{Variables}
+<<echo = FALSE, warning=FALSE>>=
+library(readxl)
+data <- read_excel("Data Sheet.xlsx")
+data <- na.omit(data)
+daten <- data[,c("val_con", "sex_sti","spp_sti", "side_con", "index" , "dog")]
+daten <- data.frame(daten)
+head(daten, 5)
+@
+The data set consists 19 variables with 188 entries per variable. The important variables that are used in the model are: \\
+1)spp\_sti: Represents the type of the stimulus. The variable has two levels, either dog or human.\\
+2)val\_con: Represents the valence of the stimulus. The variable has two levels, either positive or negative.\\
+3)sex\_sti: Represents the sex of the stimulus. The variable has two levels, either male or female. \\
+4)side\_con: Represents the side of the stimulus. The variable has two levels, either left or right. \\
+
+\section{Statistical Model}
+\subsection{Generalized Linear Mixed Model(GLMM)}
+The researchers analyzed the congruence index with a Generalized Linear Mixed Model with individual dog included in the model as a random effect. The researchers first built the model with the variables from section 3.1.2 including their first and second order conditions.
+<<echo = FALSE, results='hide'>>=
+library(nlme)
+model <- lme(index ~ val_con * sex_sti * spp_sti * side_con, random = ~1|dog, data = daten)
+summary(model)
+@
+\subsection{Final Model}
+Since the first and second order conditions are not significant in the model, the final model did not include them. Our final model is,
+<<echo=FALSE, results='hide'>>=
+model1 <- lme(index ~ val_con + sex_sti + spp_sti + side_con, random = ~1|dog, data = daten)
+summary(model1)
+@
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Value} & \textbf{Std.Error} & \textbf{t-value} & \textbf{p-value}\\ \hline
+intercept & 0.27 & 0.0733 & 3.71 & 0.0003\\
+valconpositive & -0.0989 & 0.0678 & -1.4571 & 0.1469 \\
+sex\_stimale & -0.0413 & 0.0681 & -0.6071 & 0.5446\\
+spp\_stihuman & -0.1392 & 0.0681 & -2.04 & 0.0426 \\
+side\_conright & 0.1143 & 0.6783 & 1.6825 & 0.0943 \\
+\end{tabular}\\
+
+
+\subsection{Normality Assumption}
+The normality assumption of the data was verified by visually inspecting the plots of residuals.
+
+<<echo = FALSE>>=
+qqnorm(resid(model1))
+qqline(resid(model1), col = "red", lwd = 3)
+@
+\chapter{Results}
+Dogs showed a clear preference for the congruent face in 67\% of the trials.
+<<echo = FALSE>>=
+sum(daten$index > 0) / length(daten$index)
+@
+
+The mean congruence index across all trials was significantly greater than 0. With $ t_{16} = 5.8721 p-value = 0.0159. $
+<<echo = FALSE, results = 'hide'>>=
+ind <- aggregate(daten$index, by = list(daten$dog), mean)
+t.test(ind$x) 
+@
+
+\section{Marginal Tests}
+We calculate the marginal t-tests by hand for each variable and level.
+\subsection{Marginal Tests for the Type of Stimulus}
+<<echo = FALSE , warning=FALSE , results='hide'>>=
+options(scipen = 999)
+library(emmeans)
+emmspp <- emmeans(model1, pairwise ~ spp_sti)
+emmspp$emmeans
+@
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Marginal Mean} & \textbf{Std.Error} & \textbf{Lower CI} & \textbf{Upper CI}\\ \hline
+dog & 0.26 & 0.0482 & 0.1575 & 0.362 \\
+human & 0.12 & 0.0486 & 0.0175 & 0.223 \\
+\end{tabular}\\
+
+Mean for the level "dog" is 0.26 and SE = 0.0482. \\ 
+So the p-value is: \\
+<<echo = FALSE>>=
+pt(0.26/0.0482, 16, lower.tail = FALSE)
+@
+Mean for the level "human" is 0.12 and SE = 0.0486. \\
+So the p-value is: 
+<<echo = FALSE>>=
+pt(0.12/0.0486, 16, lower.tail = FALSE)
+@
+
+The results are indicating that the dogs show a clear preference to the congruent faces regardless of the type of stimulus. \\
+\subsection{Marginal Tests for the Emotional Valence of Stimulus}
+<<echo = FALSE, results='hide'>>=
+emmval <- emmeans(model1, pairwise ~ val_con)
+emmval$emmeans
+@
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Marginal Mean} & \textbf{Std.Error} & \textbf{Lower CI} & \textbf{Upper CI}\\ \hline
+negative & 0.24 & 0.0478 &  0.1382 & 0.341  \\
+positive & 0.141 & 0.0488 & 0.0372 & 0.244 \\
+\end{tabular}\\
+
+
+
+Mean for the level "negative" is 0.24 and SE = 0.0478. \\
+So the p-value is: \\
+<<echo = FALSE >>=
+pt(0.24/0.0478, 16, lower.tail = FALSE)
+@
+
+Mean for the level "positive" is 0.141 and SE = 0.0488. \\
+So the p-value is:
+<<echo = FALSE >>=
+pt(0.141/0.0488, 16, lower.tail = FALSE)
+@
+The results show us that the dogs have a clear preference to look at the congruent faces. The emotional valence either negative or positive doesn't change their attitude.
+
+\subsection{Marginal Tests for the Sex of Stimulus}
+<<echo = FALSE, results = 'hide'>>=
+emmsex <- emmeans(model1, pairwise ~ sex_sti)
+emmsex$emmeans
+@
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Marginal Mean} & \textbf{Std.Error} & \textbf{Lower CI} & \textbf{Upper CI}\\ \hline
+female & 0.211 & 0.0476 & 0.1098 & 0.312  \\
+male & 0.169 & 0.0491 & 0.0653 & 0.274 \\
+\end{tabular}\\
+
+
+Mean for the level "female" is 0.211 and SE = 0.0476. \\
+So the p-value is:
+<<echo = FALSE>>=
+pt(0.211/0.0476, 16, lower.tail = FALSE)
+@
+
+Mean for the level "male" is 0.169 and SE = 0.0491. \\
+So the p-value is: 
+<<echo = FALSE>>=
+pt(0.169/0.0491, 16, lower.tail = FALSE)
+@
+
+The results indicate that the dogs have a clear preference to the congruent faces independent of the sex of stimulus.
+\subsection{Marginal Tests for the Side of Stimulus}
+<<echo = FALSE, results='hide'>>=
+emmside <- emmeans(model1, pairwise ~ side_con)
+emmside$emmeans
+@
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Marginal Mean} & \textbf{Std.Error} & \textbf{Lower CI} & \textbf{Upper CI}\\ \hline
+left & 0.133 & 0.0486 & 0.03 & 0.236  \\
+right & 0.247 & 0.0481 & 0.145 & 0.349 \\
+\end{tabular}\\
+
+
+Mean for the level "left" is 0.133 and SE = 0.0486. \\
+So the p-value is:
+<<echo = FALSE>>=
+pt(0.133/0.0486, 16, lower.tail = FALSE)
+@
+
+Mean for the level "right" is 0.247 and SE = 0.0481. \\
+So the p-value is:
+<<echo = FALSE>>=
+pt(0.247/0.0481, 16, lower.tail = FALSE)
+@
+These results show us that the dogs keep having a preference to the congruent faces regardless of the side of stimulus.
+
+\section{Model with the only Significant Variable: "spp\_sti"}
+<<echo = FALSE, results='hide'>>=
+model_spp <- lme(index ~ spp_sti , random = ~1|dog, data = daten)
+summary(model_spp)
+@
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Value} & \textbf{Std.Error} & \textbf{t\-value} & \textbf{p\-value}\\ \hline
+spp\_stihuman & $-0.1435 $&  0.0682 & $-2.1025 $& 0.037 \\ 
+\end{tabular}\\
+The congruence index for this model is significantly higher for viewing dog rather than human faces.\\
+<<echo = FALSE, results='hide'>>=
+emmdoghuman <- emmeans(model_spp, pairwise ~ spp_sti)
+emmdoghuman$contrasts
+@ 
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Estimate} & \textbf{Std.Error} & \textbf{t\-value} & \textbf{p\-value}\\ \hline
+dog \- human & 0.144 &  0.0683 & 2.103 & 0.037 \\ 
+\end{tabular}\\
+indicating that dogs demonstrated greater sensitivity towards conspecific cues.\\
+The original p-value in the paper was 0.04. \\
+\section{Model with subject sex and stimulus sex}
+The researchers observed no significant interaction effect between subject sex and stimulus sex.\\
+<<echo = FALSE, results='hide'>>=
+model12 <- lme(index ~ sex * sex_sti , random = ~1|dog, data = data)
+summary(model12)
+@
+
+
+\begin{tabular}{lllll}
+\textbf{Variables} & \textbf{Value} & \textbf{Std.Error} & \textbf{t-value} & \textbf{p-value}\\ \hline
+sexmale & 0.0498 &  0.0988 & 0.5047 & 0.6211 \\ 
+sex\_stimale & 0.0278 &  0.1018 & 0.2736 & 0.7847 \\
+sexmale\_sex\_stimale &  -0.1594  & 0.1382 &  0.1382 &  0.2505 \\ 
+\end{tabular}\\
+
+
+With $p-value = 0.25$ and the main effects sex and stimulus sex are also not significant.
+\section{Do the dogs prefer negative or positive valence?}
+<<echo = FALSE, results='hide'>>=
+ind_cont <- aggregate(data$valence, by = list(data$dog), mean)
+t.test(ind_cont$x)
+@
+The researchers compared the mean of the valence index to zero with a t-test. The result indicates that there was no difference in the proportion of viewing time between positive and negative facial expressions across trials.
+$t_{16} = -0.93869, p = 0.3618.  $
+
+\chapter{Conclusion}
+In this chapter we will be comparing the demonstrated results with the results from the paper. \\
+The researchers calculated the preference for the congruent faces as 67\% and when we compare it to our result in Chapter 4, we see that the results are identical.  \\
+The t-test for the mean congruence index delivers nearly the same result in the paper with $ t_{16} = 5.8721 $. In the paper it was 5.53. \\
+Our marginal tests are nearly identical to the results in the paper. 
+
+
+\begin{tabular}{lll}
+\textbf{Type of Stimulus} & \textbf{Paper} & \textbf{Report}\\ \hline
+Dog & 0.0001 & 0.00002981982 \\ 
+Human & 0.01 &  0.01259419 \\ 
+\end{tabular}
+
+
+\begin{tabular}{lll}
+\centering
+\textbf{Emotional Valence} & \textbf{Paper} & \textbf{Report}\\ \hline
+negative & 0.0001 &  0.0000627319 \\ 
+positive &  0.005 &   0.005337206 \\ 
+\end{tabular}
+
+
+\begin{tabular}{lll}
+\textbf{Sex of Stimulus} & \textbf{Paper} & \textbf{Report}\\ \hline
+male & 0.001 &  0.001674994 \\ 
+female & 0.0001 &   0.0002089197 \\ 
+\end{tabular}
+
+
+\begin{tabular}{lll}
+\textbf{Side of Stimulus} & \textbf{Paper} & \textbf{Report}\\ \hline
+left & 0.01 &   0.007315331 \\ 
+right & 0.0001 &    0.00004987591 \\ 
+\end{tabular}
+
+Indicating that we achieved nearly identical p-values comparing to the ones in the paper. 
+\end{document}
+
+
+
+
+
